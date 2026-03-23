@@ -18,6 +18,10 @@
       min-height: 100vh;
     }
 
+    a {
+      color: inherit;
+    }
+
     .container {
       width: min(1120px, calc(100% - 32px));
       margin: 0 auto;
@@ -340,7 +344,7 @@
       border-radius: 22px;
       padding: 16px 18px;
       font-size: 15px;
-      line-height: 1.6;
+      line-height: 1.7;
       border: 1px solid #e2e8f0;
     }
 
@@ -370,6 +374,22 @@
       padding: 22px;
       color: #475569;
       line-height: 1.7;
+    }
+
+    .meta-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .meta-item {
+      color: #334155;
+    }
+
+    .meta-item a {
+      color: #0f172a;
+      text-decoration: underline;
+      word-break: break-word;
     }
 
     @media (max-width: 980px) {
@@ -419,7 +439,10 @@
       <div class="hero">
         <div class="badge">Тренировки для квизов</div>
         <h1>Выбери режим тренировки</h1>
-        <p class="subtitle">Вопросы теперь лежат в отдельном файле <strong>questions.js</strong>. При открытии темы показывается случайный вопрос из базы этой категории.</p>
+        <p class="subtitle">
+          Для разминки показывается тест с 4 вариантами ответа. Для логики и хардкора —
+          ручной ввод ответа, а затем правильный ответ, пояснение, источник и автор.
+        </p>
         <div class="authors">by мальчики крю</div>
       </div>
 
@@ -432,7 +455,9 @@
           <button class="back-btn" id="back-btn">← Назад к темам</button>
           <div class="mode-badge" id="mode-badge">Разминка</div>
           <h2 class="question-title">Случайный вопрос</h2>
-          <p class="question-subtitle">Для разминки вопрос показывается с 4 вариантами ответа. Для остальных тем можно сначала ответить самому, а потом нажать «Показать ответ».</p>
+          <p class="question-subtitle" id="question-subtitle">
+            Выберите ответ или проверьте себя после ручного ввода — в зависимости от режима.
+          </p>
         </div>
 
         <div class="status-card">
@@ -447,7 +472,7 @@
     </section>
   </div>
 
-  <script src="questions.js"></script>
+  <script src="./questions.js?v=4"></script>
   <script>
     const categories = [
       {
@@ -460,9 +485,9 @@
       {
         id: 'logic',
         title: 'Логика',
-        description: 'Задачи на мышление и сообразительность.',
+        description: 'Вопросы с ручным ответом, ответом, пояснением, источником и автором.',
         icon: '🧠',
-        tag: 'Пиши ответ'
+        tag: 'Ручной ответ'
       },
       {
         id: 'shazam',
@@ -488,9 +513,9 @@
       {
         id: 'hardcore',
         title: 'Хардкор',
-        description: 'Самый сложный режим для уверенных игроков.',
+        description: 'Сложные вопросы с ручным ответом, пояснением, источником и автором.',
         icon: '⚡',
-        tag: 'Пиши ответ'
+        tag: 'Ручной ответ'
       }
     ];
 
@@ -510,6 +535,7 @@
     const statusMode = document.getElementById('status-mode');
     const backBtn = document.getElementById('back-btn');
     const questionContainer = document.getElementById('question-container');
+    const questionSubtitle = document.getElementById('question-subtitle');
 
     let currentCategory = null;
     let currentQuestion = null;
@@ -570,9 +596,24 @@
     function renderEmptyState() {
       questionContainer.innerHTML = `
         <div class="empty-note">
-          В этой теме пока нет вопросов. Добавьте их в файл <strong>questions.js</strong> в нужный массив категории.
+          В этой теме пока нет вопросов. Добавьте их в файл <strong>questions.js</strong>
+          в нужный массив категории.
         </div>
       `;
+    }
+
+    function updateSubtitleByCategory(categoryId) {
+      if (categoryId === 'warmup') {
+        questionSubtitle.textContent = 'Для разминки показывается вопрос с 4 вариантами ответа.';
+        return;
+      }
+
+      if (categoryId === 'logic' || categoryId === 'hardcore') {
+        questionSubtitle.textContent = 'Сначала показывается только вопрос. Можно ввести свой ответ или сразу нажать «Показать ответ». После этого показываются правильный ответ, пояснение, источник и автор.';
+        return;
+      }
+
+      questionSubtitle.textContent = 'Сначала можно написать свой ответ вручную, а потом раскрыть правильный.';
     }
 
     function renderWarmupQuestion(question) {
@@ -611,17 +652,23 @@
             }
           });
 
+          const explanationHtml = question.explanation
+            ? `<br><br><strong>Пояснение:</strong> ${question.explanation}`
+            : '';
+
           if (optionIndex !== question.correctIndex) {
             btn.classList.add('wrong');
             feedbackBox.innerHTML = `
               <div class="feedback wrong">
                 Неверно. Правильный ответ: <strong>${question.options[question.correctIndex]}</strong>
+                ${explanationHtml}
               </div>
             `;
           } else {
             feedbackBox.innerHTML = `
               <div class="feedback correct">
                 Верно! Правильный ответ: <strong>${question.options[question.correctIndex]}</strong>
+                ${explanationHtml}
               </div>
             `;
           }
@@ -634,18 +681,64 @@
       });
     }
 
+    function buildDetailedAnswerHtml(question, userAnswer = '') {
+      const isDbMode = currentCategory.id === 'logic' || currentCategory.id === 'hardcore';
+
+      const userAnswerHtml = userAnswer
+        ? `<div class="meta-item"><strong>Ваш ответ:</strong> ${userAnswer}</div>`
+        : '';
+
+      const explanationHtml = question.explanation
+        ? `<div class="meta-item"><strong>Пояснение:</strong> ${question.explanation}</div>`
+        : '';
+
+      const sourceHtml = isDbMode && question.source
+        ? `<div class="meta-item"><strong>Источник:</strong> ${question.source}</div>`
+        : '';
+
+      const authorHtml = isDbMode && question.author
+        ? `<div class="meta-item"><strong>Автор:</strong> ${question.author}</div>`
+        : '';
+
+      const sourceUrlHtml = isDbMode && question.sourceUrl
+        ? `<div class="meta-item"><strong>Ссылка:</strong> <a href="${question.sourceUrl}" target="_blank" rel="noopener noreferrer">${question.sourceUrl}</a></div>`
+        : '';
+
+      return `
+        <div class="answer-box">
+          <div><strong>Правильный ответ:</strong> ${question.answer}</div>
+          <div class="meta-list">
+            ${userAnswerHtml}
+            ${explanationHtml}
+            ${sourceHtml}
+            ${authorHtml}
+            ${sourceUrlHtml}
+          </div>
+        </div>
+      `;
+    }
+
     function renderOpenQuestion(question) {
+      const isDbMode = currentCategory.id === 'logic' || currentCategory.id === 'hardcore';
+
       questionContainer.innerHTML = `
         <div class="question-card">
           <div class="question-meta">
             <div class="question-chip">Случайный вопрос</div>
-            <div class="question-chip">Свободный ответ</div>
+            <div class="question-chip">${isDbMode ? 'Ответ + пояснение' : 'Свободный ответ'}</div>
           </div>
           <div class="question-text">${question.question}</div>
           <div class="answer-zone">
-            <div class="helper">Сначала можно написать свой ответ вручную, а потом раскрыть правильный.</div>
+            <div class="helper">
+              ${
+                isDbMode
+                  ? 'Сначала можно написать свой ответ и нажать «Ответить», либо сразу нажать «Показать ответ».'
+                  : 'Сначала можно написать свой ответ вручную, а потом раскрыть правильный.'
+              }
+            </div>
             <textarea class="answer-input" id="manual-answer" placeholder="Введите свой ответ..."></textarea>
             <div class="actions-row">
+              <button class="action-btn" id="check-answer-btn">Ответить</button>
               <button class="action-btn" id="show-answer-btn">Показать ответ</button>
               <button class="next-btn" id="next-question-btn">Следующий вопрос</button>
             </div>
@@ -654,12 +747,16 @@
         </div>
       `;
 
+      const manualAnswer = document.getElementById('manual-answer');
+      const answerBox = document.getElementById('answer-box');
+
+      document.getElementById('check-answer-btn').addEventListener('click', () => {
+        const userAnswer = manualAnswer.value.trim();
+        answerBox.innerHTML = buildDetailedAnswerHtml(question, userAnswer);
+      });
+
       document.getElementById('show-answer-btn').addEventListener('click', () => {
-        document.getElementById('answer-box').innerHTML = `
-          <div class="answer-box">
-            <strong>Ответ:</strong> ${question.answer}
-          </div>
-        `;
+        answerBox.innerHTML = buildDetailedAnswerHtml(question);
       });
 
       document.getElementById('next-question-btn').addEventListener('click', showNextQuestion);
@@ -689,6 +786,7 @@
       currentCategory = category;
       modeBadge.textContent = category.title;
       statusMode.textContent = category.title;
+      updateSubtitleByCategory(category.id);
       homeScreen.classList.remove('active');
       questionsScreen.classList.add('active');
       renderQuestion();
