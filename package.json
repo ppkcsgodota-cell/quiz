@@ -1,0 +1,11 @@
+{
+  "name": "quiz-importer",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "import": "node import-chgk.js"
+  },
+  "dependencies": {
+    "fast-xml-parser": "^4.5.0"
+  }
+}
