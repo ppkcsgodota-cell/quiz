@@ -51,7 +51,7 @@
     }
 
     .subtitle {
-      max-width: 760px;
+      max-width: 820px;
       margin: 0 auto;
       font-size: 18px;
       line-height: 1.6;
@@ -427,13 +427,23 @@
       margin-bottom: 14px;
     }
 
-    .global-explanation {
-      margin-top: 18px;
-      padding: 16px 18px;
+    .audio-box {
       border: 1px solid #e2e8f0;
-      border-radius: 22px;
+      border-radius: 24px;
+      padding: 20px;
       background: #f8fafc;
-      line-height: 1.7;
+      margin-bottom: 18px;
+    }
+
+    .audio-title {
+      font-size: 18px;
+      font-weight: 800;
+      margin-bottom: 12px;
+    }
+
+    .audio-box audio {
+      width: 100%;
+      display: block;
     }
 
     @media (max-width: 980px) {
@@ -490,6 +500,7 @@
         <p class="subtitle">
           Для разминки показывается вопрос с 4 вариантами ответа.
           Для логики — ручной ввод ответа и пояснение.
+          Для шазама — аудиофрагмент и проверка ответа.
           Для 3 стульев — одна подводка и три вопроса по нарастанию сложности.
         </p>
         <div class="authors">by мальчики крю</div>
@@ -521,7 +532,7 @@
     </section>
   </div>
 
- <script src="./questions.js?v=13"></script>
+  <script src="./questions.js?v=15"></script>
   <script>
     const categories = [
       {
@@ -541,9 +552,9 @@
       {
         id: 'shazam',
         title: 'Шазам',
-        description: 'Музыкальный блок для угадываний и тренировки памяти.',
+        description: 'Аудиофрагмент, догадка и проверка ответа.',
         icon: '🎧',
-        tag: 'Пиши ответ'
+        tag: 'Аудио'
       },
       {
         id: 'three-chairs',
@@ -654,6 +665,11 @@
         return;
       }
 
+      if (categoryId === 'shazam') {
+        questionSubtitle.textContent = 'В этом режиме можно включить аудиофрагмент, написать свой ответ и потом проверить себя.';
+        return;
+      }
+
       if (categoryId === 'three-chairs') {
         questionSubtitle.textContent = 'В этом режиме показывается одна подводка и три вопроса: лёгкий, средний и сложный. Для каждого можно ввести свой ответ или сразу открыть правильный.';
         return;
@@ -748,23 +764,15 @@
     }
 
     function renderOpenQuestion(question) {
-      const isLogicMode = currentCategory.id === 'logic';
-
       questionContainer.innerHTML = `
         <div class="question-card">
           <div class="question-meta">
             <div class="question-chip">Случайный вопрос</div>
-            <div class="question-chip">${isLogicMode ? 'Ответ + пояснение' : 'Свободный ответ'}</div>
+            <div class="question-chip">Свободный ответ</div>
           </div>
           <div class="question-text">${question.question}</div>
           <div class="answer-zone">
-            <div class="helper">
-              ${
-                isLogicMode
-                  ? 'Сначала можно написать свой ответ и нажать «Ответить», либо сразу нажать «Показать ответ».'
-                  : 'Сначала можно написать свой ответ вручную, а потом раскрыть правильный.'
-              }
-            </div>
+            <div class="helper">Сначала можно написать свой ответ и нажать «Ответить», либо сразу нажать «Показать ответ».</div>
             <textarea class="answer-input" id="manual-answer" placeholder="Введите свой ответ..."></textarea>
             <div class="actions-row">
               <button class="action-btn" id="check-answer-btn">Ответить</button>
@@ -791,104 +799,148 @@
       document.getElementById('next-question-btn').addEventListener('click', showNextQuestion);
     }
 
-   function renderThreeChairsQuestion(question) {
-  questionContainer.innerHTML = `
-    <div class="question-card">
-      <div class="question-meta">
-        <div class="question-chip">Случайный блок</div>
-        <div class="question-chip">3 уровня сложности</div>
-      </div>
+    function renderShazamQuestion(question) {
+      questionContainer.innerHTML = `
+        <div class="question-card">
+          <div class="question-meta">
+            <div class="question-chip">Случайный трек</div>
+            <div class="question-chip">Аудио</div>
+          </div>
 
-      <div class="intro-text">${question.intro || ''}</div>
+          <div class="audio-box">
+            <div class="audio-title">${question.title || 'Аудиофрагмент'}</div>
+            ${
+              question.audio
+                ? `<audio controls preload="none" src="${question.audio}"></audio>`
+                : `<div class="empty-note" style="padding:16px;">У этого вопроса не указан путь к аудиофайлу.</div>`
+            }
+          </div>
 
-      <div class="chairs-grid">
-        ${buildThreeChairStep({
-          title: 'Вопрос 1 · лёгкий',
-          points: '0,5 балла',
-          questionText: question.q1,
-          stepId: 1
-        })}
+          <div class="answer-zone">
+            <div class="helper">Послушай фрагмент, напиши свой ответ и потом проверь себя.</div>
+            <textarea class="answer-input" id="manual-answer" placeholder="Введите исполнителя, название или полный ответ..."></textarea>
+            <div class="actions-row">
+              <button class="action-btn" id="check-answer-btn">Ответить</button>
+              <button class="action-btn" id="show-answer-btn">Показать ответ</button>
+              <button class="next-btn" id="next-question-btn">Следующий трек</button>
+            </div>
+            <div id="answer-box"></div>
+          </div>
+        </div>
+      `;
 
-        ${buildThreeChairStep({
-          title: 'Вопрос 2 · средний',
-          points: '1 балл',
-          questionText: question.q2,
-          stepId: 2
-        })}
+      const manualAnswer = document.getElementById('manual-answer');
+      const answerBox = document.getElementById('answer-box');
 
-        ${buildThreeChairStep({
-          title: 'Вопрос 3 · сложный',
-          points: '1,5 балла',
-          questionText: question.q3,
-          stepId: 3
-        })}
-      </div>
+      document.getElementById('check-answer-btn').addEventListener('click', () => {
+        const userAnswer = manualAnswer.value.trim();
+        answerBox.innerHTML = buildDetailedAnswerHtml(question, userAnswer);
+      });
 
-      <div style="margin-top: 18px;">
-        <button class="next-btn" id="next-question-btn">Следующий блок</button>
-      </div>
-    </div>
-  `;
+      document.getElementById('show-answer-btn').addEventListener('click', () => {
+        answerBox.innerHTML = buildDetailedAnswerHtml(question);
+      });
 
-  attachThreeChairHandlers(1, question.a1, question.explanation || '');
-  attachThreeChairHandlers(2, question.a2, question.explanation || '');
-  attachThreeChairHandlers(3, question.a3, question.explanation || '');
+      document.getElementById('next-question-btn').addEventListener('click', showNextQuestion);
+    }
 
-  document.getElementById('next-question-btn').addEventListener('click', showNextQuestion);
-}
+    function renderThreeChairsQuestion(question) {
+      questionContainer.innerHTML = `
+        <div class="question-card">
+          <div class="question-meta">
+            <div class="question-chip">Случайный блок</div>
+            <div class="question-chip">3 уровня сложности</div>
+          </div>
 
-   function buildThreeChairStep({ title, points, questionText, stepId }) {
-  return `
-    <div class="chair-step">
-      <div class="chair-step-title">${title} · ${points}</div>
-      <div class="chair-step-question">${questionText || ''}</div>
-      <div class="helper">Можно выбрать любой из трёх вопросов и ответить на него в любом порядке.</div>
-      <textarea class="answer-input" id="chair-input-${stepId}" placeholder="Введите свой ответ..."></textarea>
-      <div class="actions-row" style="margin-top: 12px;">
-        <button class="action-btn" id="chair-check-${stepId}">Ответить</button>
-        <button class="action-btn" id="chair-show-${stepId}">Показать ответ</button>
-      </div>
-      <div id="chair-answer-${stepId}" style="margin-top: 14px;"></div>
-    </div>
-  `;
-}
+          <div class="intro-text">${question.intro || ''}</div>
+
+          <div class="chairs-grid">
+            ${buildThreeChairStep({
+              title: 'Вопрос 1 · лёгкий',
+              points: '0,5 балла',
+              questionText: question.q1,
+              stepId: 1
+            })}
+
+            ${buildThreeChairStep({
+              title: 'Вопрос 2 · средний',
+              points: '1 балл',
+              questionText: question.q2,
+              stepId: 2
+            })}
+
+            ${buildThreeChairStep({
+              title: 'Вопрос 3 · сложный',
+              points: '1,5 балла',
+              questionText: question.q3,
+              stepId: 3
+            })}
+          </div>
+
+          <div style="margin-top: 18px;">
+            <button class="next-btn" id="next-question-btn">Следующий блок</button>
+          </div>
+        </div>
+      `;
+
+      attachThreeChairHandlers(1, question.a1, question.explanation || '');
+      attachThreeChairHandlers(2, question.a2, question.explanation || '');
+      attachThreeChairHandlers(3, question.a3, question.explanation || '');
+
+      document.getElementById('next-question-btn').addEventListener('click', showNextQuestion);
+    }
+
+    function buildThreeChairStep({ title, points, questionText, stepId }) {
+      return `
+        <div class="chair-step">
+          <div class="chair-step-title">${title} · ${points}</div>
+          <div class="chair-step-question">${questionText || ''}</div>
+          <div class="helper">Можно выбрать любой из трёх вопросов и ответить на него в любом порядке.</div>
+          <textarea class="answer-input" id="chair-input-${stepId}" placeholder="Введите свой ответ..."></textarea>
+          <div class="actions-row" style="margin-top: 12px;">
+            <button class="action-btn" id="chair-check-${stepId}">Ответить</button>
+            <button class="action-btn" id="chair-show-${stepId}">Показать ответ</button>
+          </div>
+          <div id="chair-answer-${stepId}" style="margin-top: 14px;"></div>
+        </div>
+      `;
+    }
 
     function attachThreeChairHandlers(stepId, answer, explanation) {
-  const input = document.getElementById(`chair-input-${stepId}`);
-  const box = document.getElementById(`chair-answer-${stepId}`);
-  const checkBtn = document.getElementById(`chair-check-${stepId}`);
-  const showBtn = document.getElementById(`chair-show-${stepId}`);
+      const input = document.getElementById(`chair-input-${stepId}`);
+      const box = document.getElementById(`chair-answer-${stepId}`);
+      const checkBtn = document.getElementById(`chair-check-${stepId}`);
+      const showBtn = document.getElementById(`chair-show-${stepId}`);
 
-  function renderAnswer(userAnswer = '') {
-    const userAnswerHtml = userAnswer
-      ? `<div class="meta-item"><strong>Ваш ответ:</strong> ${userAnswer}</div>`
-      : '';
+      function renderAnswer(userAnswer = '') {
+        const userAnswerHtml = userAnswer
+          ? `<div class="meta-item"><strong>Ваш ответ:</strong> ${userAnswer}</div>`
+          : '';
 
-    const explanationHtml = explanation
-      ? `<div class="meta-item"><strong>Пояснение:</strong> ${explanation}</div>`
-      : '';
+        const explanationHtml = explanation
+          ? `<div class="meta-item"><strong>Пояснение:</strong> ${explanation}</div>`
+          : '';
 
-    box.innerHTML = `
-      <div class="answer-box">
-        <div><strong>Правильный ответ:</strong> ${answer || ''}</div>
-        <div class="meta-list">
-          ${userAnswerHtml}
-          ${explanationHtml}
-        </div>
-      </div>
-    `;
-  }
+        box.innerHTML = `
+          <div class="answer-box">
+            <div><strong>Правильный ответ:</strong> ${answer || ''}</div>
+            <div class="meta-list">
+              ${userAnswerHtml}
+              ${explanationHtml}
+            </div>
+          </div>
+        `;
+      }
 
-  checkBtn.addEventListener('click', () => {
-    renderAnswer(input.value.trim());
-  });
+      checkBtn.addEventListener('click', () => {
+        renderAnswer(input.value.trim());
+      });
 
-  showBtn.addEventListener('click', () => {
-    renderAnswer();
-  });
-}
+      showBtn.addEventListener('click', () => {
+        renderAnswer();
+      });
+    }
 
- 
     function renderQuestion() {
       currentQuestion = getRandomQuestion(currentCategory.id);
 
@@ -899,6 +951,11 @@
 
       if (currentCategory.id === 'warmup') {
         renderWarmupQuestion(currentQuestion);
+        return;
+      }
+
+      if (currentCategory.id === 'shazam') {
+        renderShazamQuestion(currentQuestion);
         return;
       }
 
