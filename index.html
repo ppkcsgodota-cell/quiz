@@ -791,115 +791,104 @@
       document.getElementById('next-question-btn').addEventListener('click', showNextQuestion);
     }
 
-    function renderThreeChairsQuestion(question) {
-      questionContainer.innerHTML = `
-        <div class="question-card">
-          <div class="question-meta">
-            <div class="question-chip">Случайный блок</div>
-            <div class="question-chip">3 уровня сложности</div>
-          </div>
+   function renderThreeChairsQuestion(question) {
+  questionContainer.innerHTML = `
+    <div class="question-card">
+      <div class="question-meta">
+        <div class="question-chip">Случайный блок</div>
+        <div class="question-chip">3 уровня сложности</div>
+      </div>
 
-          <div class="intro-text">${question.intro || ''}</div>
+      <div class="intro-text">${question.intro || ''}</div>
 
-          <div class="chairs-grid">
-            ${buildThreeChairStep({
-              title: 'Вопрос 1 · лёгкий',
-              points: '0,5 балла',
-              questionText: question.q1,
-              answerText: question.a1,
-              explanation: question.explanation || '',
-              stepId: 1
-            })}
+      <div class="chairs-grid">
+        ${buildThreeChairStep({
+          title: 'Вопрос 1 · лёгкий',
+          points: '0,5 балла',
+          questionText: question.q1,
+          stepId: 1
+        })}
 
-            ${buildThreeChairStep({
-              title: 'Вопрос 2 · средний',
-              points: '1 балл',
-              questionText: question.q2,
-              answerText: question.a2,
-              explanation: question.explanation || '',
-              stepId: 2
-            })}
+        ${buildThreeChairStep({
+          title: 'Вопрос 2 · средний',
+          points: '1 балл',
+          questionText: question.q2,
+          stepId: 2
+        })}
 
-            ${buildThreeChairStep({
-              title: 'Вопрос 3 · сложный',
-              points: '1,5 балла',
-              questionText: question.q3,
-              answerText: question.a3,
-              explanation: question.explanation || '',
-              stepId: 3
-            })}
-          </div>
+        ${buildThreeChairStep({
+          title: 'Вопрос 3 · сложный',
+          points: '1,5 балла',
+          questionText: question.q3,
+          stepId: 3
+        })}
+      </div>
 
-          ${
-            question.explanation
-              ? `<div class="global-explanation"><strong>Общее пояснение:</strong> ${question.explanation}</div>`
-              : ''
-          }
+      <div style="margin-top: 18px;">
+        <button class="next-btn" id="next-question-btn">Следующий блок</button>
+      </div>
+    </div>
+  `;
 
-          <div style="margin-top: 18px;">
-            <button class="next-btn" id="next-question-btn">Следующий блок</button>
-          </div>
-        </div>
-      `;
+  attachThreeChairHandlers(1, question.a1, question.explanation || '');
+  attachThreeChairHandlers(2, question.a2, question.explanation || '');
+  attachThreeChairHandlers(3, question.a3, question.explanation || '');
 
-      attachThreeChairHandlers(1, question.a1, question.explanation || '');
-      attachThreeChairHandlers(2, question.a2, question.explanation || '');
-      attachThreeChairHandlers(3, question.a3, question.explanation || '');
+  document.getElementById('next-question-btn').addEventListener('click', showNextQuestion);
+}
 
-      document.getElementById('next-question-btn').addEventListener('click', showNextQuestion);
-    }
-
-    function buildThreeChairStep({ title, points, questionText, answerText, explanation, stepId }) {
-      return `
-        <div class="chair-step">
-          <div class="chair-step-title">${title} · ${points}</div>
-          <div class="chair-step-question">${questionText || ''}</div>
-          <div class="helper">Можно ввести свой ответ или сразу показать правильный.</div>
-          <textarea class="answer-input" id="chair-input-${stepId}" placeholder="Введите свой ответ..."></textarea>
-          <div class="actions-row" style="margin-top: 12px;">
-            <button class="action-btn" id="chair-check-${stepId}">Ответить</button>
-            <button class="action-btn" id="chair-show-${stepId}">Показать ответ</button>
-          </div>
-          <div id="chair-answer-${stepId}" style="margin-top: 14px;"></div>
-        </div>
-      `;
-    }
+   function buildThreeChairStep({ title, points, questionText, stepId }) {
+  return `
+    <div class="chair-step">
+      <div class="chair-step-title">${title} · ${points}</div>
+      <div class="chair-step-question">${questionText || ''}</div>
+      <div class="helper">Можно выбрать любой из трёх вопросов и ответить на него в любом порядке.</div>
+      <textarea class="answer-input" id="chair-input-${stepId}" placeholder="Введите свой ответ..."></textarea>
+      <div class="actions-row" style="margin-top: 12px;">
+        <button class="action-btn" id="chair-check-${stepId}">Ответить</button>
+        <button class="action-btn" id="chair-show-${stepId}">Показать ответ</button>
+      </div>
+      <div id="chair-answer-${stepId}" style="margin-top: 14px;"></div>
+    </div>
+  `;
+}
 
     function attachThreeChairHandlers(stepId, answer, explanation) {
-      const input = document.getElementById(`chair-input-${stepId}`);
-      const box = document.getElementById(`chair-answer-${stepId}`);
-      const checkBtn = document.getElementById(`chair-check-${stepId}`);
-      const showBtn = document.getElementById(`chair-show-${stepId}`);
+  const input = document.getElementById(`chair-input-${stepId}`);
+  const box = document.getElementById(`chair-answer-${stepId}`);
+  const checkBtn = document.getElementById(`chair-check-${stepId}`);
+  const showBtn = document.getElementById(`chair-show-${stepId}`);
 
-      function renderAnswer(userAnswer = '') {
-        const userAnswerHtml = userAnswer
-          ? `<div class="meta-item"><strong>Ваш ответ:</strong> ${userAnswer}</div>`
-          : '';
+  function renderAnswer(userAnswer = '') {
+    const userAnswerHtml = userAnswer
+      ? `<div class="meta-item"><strong>Ваш ответ:</strong> ${userAnswer}</div>`
+      : '';
 
-        const explanationHtml = explanation
-          ? `<div class="meta-item"><strong>Пояснение:</strong> ${explanation}</div>`
-          : '';
+    const explanationHtml = explanation
+      ? `<div class="meta-item"><strong>Пояснение:</strong> ${explanation}</div>`
+      : '';
 
-        box.innerHTML = `
-          <div class="answer-box">
-            <div><strong>Правильный ответ:</strong> ${answer || ''}</div>
-            <div class="meta-list">
-              ${userAnswerHtml}
-              ${explanationHtml}
-            </div>
-          </div>
-        `;
-      }
+    box.innerHTML = `
+      <div class="answer-box">
+        <div><strong>Правильный ответ:</strong> ${answer || ''}</div>
+        <div class="meta-list">
+          ${userAnswerHtml}
+          ${explanationHtml}
+        </div>
+      </div>
+    `;
+  }
 
-      checkBtn.addEventListener('click', () => {
-        renderAnswer(input.value.trim());
-      });
+  checkBtn.addEventListener('click', () => {
+    renderAnswer(input.value.trim());
+  });
 
-      showBtn.addEventListener('click', () => {
-        renderAnswer();
-      });
-    }
+  showBtn.addEventListener('click', () => {
+    renderAnswer();
+  });
+}
 
+ 
     function renderQuestion() {
       currentQuestion = getRandomQuestion(currentCategory.id);
 
