@@ -269,6 +269,13 @@
       font-weight: 800;
     }
 
+    .intro-text {
+      font-size: clamp(22px, 2.6vw, 30px);
+      line-height: 1.35;
+      margin-bottom: 22px;
+      font-weight: 800;
+    }
+
     .answer-zone {
       display: grid;
       gap: 14px;
@@ -306,7 +313,7 @@
 
     .answer-input {
       width: 100%;
-      min-height: 120px;
+      min-height: 110px;
       resize: vertical;
       padding: 16px 18px;
       border-radius: 20px;
@@ -386,10 +393,47 @@
       color: #334155;
     }
 
-    .meta-item a {
-      color: #0f172a;
-      text-decoration: underline;
-      word-break: break-word;
+    .chairs-grid {
+      display: grid;
+      gap: 18px;
+      margin-top: 18px;
+    }
+
+    .chair-step {
+      border: 1px solid #e2e8f0;
+      border-radius: 24px;
+      padding: 20px;
+      background: white;
+    }
+
+    .chair-step-title {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      font-size: 14px;
+      color: #475569;
+      font-weight: 700;
+      margin-bottom: 14px;
+    }
+
+    .chair-step-question {
+      font-size: 24px;
+      line-height: 1.35;
+      font-weight: 800;
+      margin-bottom: 14px;
+    }
+
+    .global-explanation {
+      margin-top: 18px;
+      padding: 16px 18px;
+      border: 1px solid #e2e8f0;
+      border-radius: 22px;
+      background: #f8fafc;
+      line-height: 1.7;
     }
 
     @media (max-width: 980px) {
@@ -430,6 +474,10 @@
       .back-btn {
         width: 100%;
       }
+
+      .chair-step-question {
+        font-size: 21px;
+      }
     }
   </style>
 </head>
@@ -441,7 +489,8 @@
         <h1>Выбери режим тренировки</h1>
         <p class="subtitle">
           Для разминки показывается вопрос с 4 вариантами ответа.
-          Для логики — ручной ввод ответа, а затем правильный ответ и пояснение.
+          Для логики — ручной ввод ответа и пояснение.
+          Для 3 стульев — одна подводка и три вопроса по нарастанию сложности.
         </p>
         <div class="authors">by мальчики крю</div>
       </div>
@@ -472,7 +521,7 @@
     </section>
   </div>
 
-  <script src="./questions.js?v=5"></script>
+  <script src="./questions.js?v=12"></script>
   <script>
     const categories = [
       {
@@ -499,9 +548,9 @@
       {
         id: 'three-chairs',
         title: '3 стула',
-        description: 'Быстрые ассоциации, формулировки и импровизация.',
+        description: 'Одна подводка и три вопроса по нарастанию сложности.',
         icon: '🪑',
-        tag: 'Пиши ответ'
+        tag: '3 вопроса'
       },
       {
         id: 'secret-topic',
@@ -602,6 +651,11 @@
 
       if (categoryId === 'logic') {
         questionSubtitle.textContent = 'Сначала показывается только вопрос. Можно ввести свой ответ или сразу нажать «Показать ответ». После этого показываются правильный ответ и пояснение.';
+        return;
+      }
+
+      if (categoryId === 'three-chairs') {
+        questionSubtitle.textContent = 'В этом режиме показывается одна подводка и три вопроса: лёгкий, средний и сложный. Для каждого можно ввести свой ответ или сразу открыть правильный.';
         return;
       }
 
@@ -737,6 +791,115 @@
       document.getElementById('next-question-btn').addEventListener('click', showNextQuestion);
     }
 
+    function renderThreeChairsQuestion(question) {
+      questionContainer.innerHTML = `
+        <div class="question-card">
+          <div class="question-meta">
+            <div class="question-chip">Случайный блок</div>
+            <div class="question-chip">3 уровня сложности</div>
+          </div>
+
+          <div class="intro-text">${question.intro || ''}</div>
+
+          <div class="chairs-grid">
+            ${buildThreeChairStep({
+              title: 'Вопрос 1 · лёгкий',
+              points: '0,5 балла',
+              questionText: question.q1,
+              answerText: question.a1,
+              explanation: question.explanation || '',
+              stepId: 1
+            })}
+
+            ${buildThreeChairStep({
+              title: 'Вопрос 2 · средний',
+              points: '1 балл',
+              questionText: question.q2,
+              answerText: question.a2,
+              explanation: question.explanation || '',
+              stepId: 2
+            })}
+
+            ${buildThreeChairStep({
+              title: 'Вопрос 3 · сложный',
+              points: '1,5 балла',
+              questionText: question.q3,
+              answerText: question.a3,
+              explanation: question.explanation || '',
+              stepId: 3
+            })}
+          </div>
+
+          ${
+            question.explanation
+              ? `<div class="global-explanation"><strong>Общее пояснение:</strong> ${question.explanation}</div>`
+              : ''
+          }
+
+          <div style="margin-top: 18px;">
+            <button class="next-btn" id="next-question-btn">Следующий блок</button>
+          </div>
+        </div>
+      `;
+
+      attachThreeChairHandlers(1, question.a1, question.explanation || '');
+      attachThreeChairHandlers(2, question.a2, question.explanation || '');
+      attachThreeChairHandlers(3, question.a3, question.explanation || '');
+
+      document.getElementById('next-question-btn').addEventListener('click', showNextQuestion);
+    }
+
+    function buildThreeChairStep({ title, points, questionText, answerText, explanation, stepId }) {
+      return `
+        <div class="chair-step">
+          <div class="chair-step-title">${title} · ${points}</div>
+          <div class="chair-step-question">${questionText || ''}</div>
+          <div class="helper">Можно ввести свой ответ или сразу показать правильный.</div>
+          <textarea class="answer-input" id="chair-input-${stepId}" placeholder="Введите свой ответ..."></textarea>
+          <div class="actions-row" style="margin-top: 12px;">
+            <button class="action-btn" id="chair-check-${stepId}">Ответить</button>
+            <button class="action-btn" id="chair-show-${stepId}">Показать ответ</button>
+          </div>
+          <div id="chair-answer-${stepId}" style="margin-top: 14px;"></div>
+        </div>
+      `;
+    }
+
+    function attachThreeChairHandlers(stepId, answer, explanation) {
+      const input = document.getElementById(`chair-input-${stepId}`);
+      const box = document.getElementById(`chair-answer-${stepId}`);
+      const checkBtn = document.getElementById(`chair-check-${stepId}`);
+      const showBtn = document.getElementById(`chair-show-${stepId}`);
+
+      function renderAnswer(userAnswer = '') {
+        const userAnswerHtml = userAnswer
+          ? `<div class="meta-item"><strong>Ваш ответ:</strong> ${userAnswer}</div>`
+          : '';
+
+        const explanationHtml = explanation
+          ? `<div class="meta-item"><strong>Пояснение:</strong> ${explanation}</div>`
+          : '';
+
+        box.innerHTML = `
+          <div class="answer-box">
+            <div><strong>Правильный ответ:</strong> ${answer || ''}</div>
+            <div class="meta-list">
+              ${userAnswerHtml}
+              ${explanationHtml}
+            </div>
+          </div>
+        `;
+      }
+
+      checkBtn.addEventListener('click', () => {
+        renderAnswer(input.value.trim());
+      });
+
+      showBtn.addEventListener('click', () => {
+        renderAnswer();
+      });
+    }
+
     function renderQuestion() {
       currentQuestion = getRandomQuestion(currentCategory.id);
 
@@ -747,9 +910,15 @@
 
       if (currentCategory.id === 'warmup') {
         renderWarmupQuestion(currentQuestion);
-      } else {
-        renderOpenQuestion(currentQuestion);
+        return;
       }
+
+      if (currentCategory.id === 'three-chairs') {
+        renderThreeChairsQuestion(currentQuestion);
+        return;
+      }
+
+      renderOpenQuestion(currentQuestion);
     }
 
     function showNextQuestion() {
